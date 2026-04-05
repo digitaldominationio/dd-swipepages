@@ -787,6 +787,29 @@
       navigator.clipboard.writeText(text).then(function () { toast('Copied!', 'success'); });
     });
 
+    $('#btn-gmail-compose').addEventListener('click', function () {
+      var text = $('#ai-result-text').textContent.trim();
+      if (!text) return toast('No content to compose', 'error');
+
+      // Try to extract subject line from the result (look for "Subject: ...")
+      var subject = '';
+      var body = text;
+      var subjectMatch = text.match(/^Subject:\s*(.+)/im);
+      if (subjectMatch) {
+        subject = subjectMatch[1].trim();
+        // Remove the subject line from body and clean up
+        body = text.replace(/^Subject:\s*.+\n*/im, '').trim();
+        // Remove "Email:" prefix if present
+        body = body.replace(/^Email:\s*\n*/im, '').trim();
+      }
+
+      var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+        + '&su=' + encodeURIComponent(subject)
+        + '&body=' + encodeURIComponent(body);
+
+      chrome.tabs.create({ url: gmailUrl });
+    });
+
     // Auto-detect selection from page
     detectSelection();
   }
