@@ -8,7 +8,7 @@
   'use strict';
 
   // ── State ──────────────────────────────────────────────────────
-  let serverUrl = 'http://localhost:3000';
+  let serverUrl = 'https://chrex.ddmn.in';
   let token = null;
   let currentUser = null;
 

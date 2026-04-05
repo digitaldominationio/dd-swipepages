@@ -8,11 +8,8 @@ async function validateEmail(prisma, email) {
 
   const apiKey = decrypt(setting.valueEncrypted);
 
-  const response = await fetch('https://emailverifier.reoon.com/api/v1/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, key: apiKey, mode: 'quick' }),
-  });
+  const params = new URLSearchParams({ email, key: apiKey, mode: 'power' });
+  const response = await fetch(`https://emailverifier.reoon.com/api/v1/verify?${params}`);
 
   if (!response.ok) {
     const text = await response.text();
