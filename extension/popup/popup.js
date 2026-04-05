@@ -70,8 +70,7 @@
   // ── Storage helpers ────────────────────────────────────────────
   async function loadStorage() {
     return new Promise(function (resolve) {
-      chrome.storage.local.get(['serverUrl', 'token', 'pinnedSnippets', 'usageStats'], function (data) {
-        if (data.serverUrl) serverUrl = data.serverUrl;
+      chrome.storage.local.get(['token', 'pinnedSnippets', 'usageStats'], function (data) {
         if (data.token) token = data.token;
         if (data.pinnedSnippets) pinnedIds = data.pinnedSnippets;
         if (data.usageStats) stats = data.usageStats;
@@ -91,10 +90,7 @@
     chrome.storage.local.set({ token: t });
   }
 
-  function saveServerUrl(url) {
-    serverUrl = url;
-    chrome.storage.local.set({ serverUrl: url });
-  }
+  // Server URL is hardcoded — no user configuration needed
 
   function savePinnedIds() {
     chrome.storage.local.set({ pinnedSnippets: pinnedIds });
@@ -210,25 +206,13 @@
       }
     });
 
-    $('#login-settings-btn').addEventListener('click', function () {
-      var url = prompt('Server URL:', serverUrl);
-      if (url) { saveServerUrl(url.replace(/\/+$/, '')); toast('Server URL saved', 'success'); }
-    });
+    // Server URL is hardcoded — login settings button removed
   }
 
   // ══════════════════════════════════════════════════════════════
   //  SETTINGS
   // ══════════════════════════════════════════════════════════════
   function initSettings() {
-    $('#settings-server').value = serverUrl;
-
-    $('#btn-save-settings').addEventListener('click', function () {
-      var url = $('#settings-server').value.trim().replace(/\/+$/, '');
-      if (!url) return toast('Enter a valid URL', 'error');
-      saveServerUrl(url);
-      toast('Settings saved', 'success');
-    });
-
     $('#btn-logout').addEventListener('click', function () {
       token = null; currentUser = null;
       chrome.storage.local.remove('token');
@@ -1200,7 +1184,7 @@
     }
     renderUserInfo();
     renderStats();
-    $('#settings-server').value = serverUrl;
+    // Server URL display removed — hardcoded
 
     // Load data in parallel
     await Promise.all([loadFolders(), loadTags(), populateCategories()]);
