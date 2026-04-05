@@ -8,6 +8,7 @@ import TeamManagement from './pages/TeamManagement';
 import ApiKeys from './pages/ApiKeys';
 import Prompts from './pages/Prompts';
 import SwipeStorage from './pages/SwipeStorage';
+import AcceptInvite from './pages/AcceptInvite';
 
 export default function App() {
   const { loading } = useAuth();
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route
         element={
           <ProtectedRoute>
