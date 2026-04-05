@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+
+# Docker
+docker-startup.log
+
+# IDE
+.vscode/
+.idea/
+
+# AI/tooling artifacts
+.claude/
+.remember/
+.serena/
+docs/superpowers/
+backend/.serena/

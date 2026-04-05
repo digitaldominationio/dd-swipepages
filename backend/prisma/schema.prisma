@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  member
+}
+
+enum SnippetType {
+  template
+  email
+  snippet
+}
+
+enum PromptCategory {
+  email
+  whatsapp
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  name         String   @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         Role     @default(member)
+  invitedBy    String?  @map("invited_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  inviter       User?          @relation("UserInvites", fields: [invitedBy], references: [id])
+  invitees      User[]         @relation("UserInvites")
+  folders       Folder[]
+  snippets      Snippet[]
+  prompts       Prompt[]
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+model InviteToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  token     String    @unique @db.VarChar(255)
+  email     String    @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  @@map("invite_tokens")
+}
+
+model Folder {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  parentId  String?  @map("parent_id") @db.Uuid
+  sortOrder Int      @default(0) @map("sort_order")
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent    Folder?   @relation("FolderTree", fields: [parentId], references: [id])
+  children  Folder[]  @relation("FolderTree")
+  creator   User      @relation(fields: [createdBy], references: [id])
+  snippets  Snippet[]
+
+  @@map("folders")
+}
+
+model Tag {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String @unique @db.VarChar(100)
+  color String @db.VarChar(7)
+
+  snippets SnippetTag[]
+
+  @@map("tags")
+}
+
+model Snippet {
+  id        String      @id @default(uuid()) @db.Uuid
+  folderId  String      @map("folder_id") @db.Uuid
+  title     String      @db.VarChar(255)
+  content   String      @db.Text
+  type      SnippetType @default(snippet)
+  createdBy String      @map("created_by") @db.Uuid
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  folder  Folder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator User         @relation(fields: [createdBy], references: [id])
+  tags    SnippetTag[]
+
+  @@map("snippets")
+}
+
+model SnippetTag {
+  snippetId String @map("snippet_id") @db.Uuid
+  tagId     String @map("tag_id") @db.Uuid
+
+  snippet Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([snippetId, tagId])
+  @@map("snippet_tags")
+}
+
+model Prompt {
+  id         String         @id @default(uuid()) @db.Uuid
+  name       String         @db.VarChar(255)
+  promptText String         @map("prompt_text") @db.Text
+  category   PromptCategory
+  sortOrder  Int            @default(0) @map("sort_order")
+  createdBy  String         @map("created_by") @db.Uuid
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("prompts")
+}
+
+model Setting {
+  id             String @id @default(uuid()) @db.Uuid
+  key            String @unique @db.VarChar(100)
+  valueEncrypted String @map("value_encrypted") @db.Text
+
+  @@map("settings")
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String   @db.VarChar(50)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("activity_log")
+}

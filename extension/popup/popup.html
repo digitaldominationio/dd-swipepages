@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400">
+  <title>Swipe Toolkit</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<!-- ───────── Login Screen ───────── -->
+<div id="login-screen" class="screen">
+  <div class="login-container">
+    <div class="login-logo">S</div>
+    <h1 class="login-title">Swipe Toolkit</h1>
+    <p class="login-subtitle">Sign in to continue</p>
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" placeholder="Password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="login-btn">Sign In</button>
+      <p id="login-error" class="error-text"></p>
+    </form>
+    <div class="login-server">
+      <button type="button" class="btn-link" id="login-settings-btn">Server Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── Main App ───────── -->
+<div id="app-screen" class="screen hidden">
+
+  <!-- Tab bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="swipe">Swipes</button>
+    <button class="tab-btn" data-tab="email">Email</button>
+    <button class="tab-btn" data-tab="ai">AI</button>
+    <button class="tab-btn" data-tab="whatsapp">WA</button>
+    <button class="tab-btn tab-settings" data-tab="settings" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    </button>
+  </nav>
+
+  <!-- ── Tab 1: Swipe Storage ── -->
+  <section id="tab-swipe" class="tab-panel active">
+    <!-- Search bar -->
+    <div class="swipe-toolbar">
+      <input type="text" id="swipe-search" placeholder="Search snippets..." class="input-search">
+      <button class="btn btn-sm btn-primary" id="btn-new-snippet" title="New snippet">+ Snippet</button>
+    </div>
+    <div class="swipe-layout">
+      <!-- Sidebar: folders -->
+      <aside class="swipe-sidebar" id="folder-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Folders</span>
+          <button class="btn-icon" id="btn-new-folder" title="New folder">+</button>
+        </div>
+        <ul id="folder-tree" class="folder-tree"></ul>
+      </aside>
+      <!-- Main: snippet list -->
+      <div class="swipe-main">
+        <!-- Tag filter -->
+        <div class="tag-filter" id="tag-filter-bar"></div>
+        <div id="snippet-list" class="snippet-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tab 2: Email Validator ── -->
+  <section id="tab-email" class="tab-panel">
+    <div class="panel-body">
+      <h2 class="panel-title">Email Validator</h2>
+      <div class="form-group">
+        <label for="validate-email-input">Email address</label>
+        <input id="validate-email-input" type="email" placeholder="user@example.com">
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-validate-email">Validate</button>
+      <div id="email-result" class="result-card hidden"></div>
+    </div>
+  </section>
+
+  <!-- ── Tab 3: AI Generator ── -->
+  <section id="tab-ai" class="tab-panel">
+    <div class="panel-body">
+      <h2 class="panel-title">AI Generator</h2>
+      <div class="form-group">
+        <label for="ai-content">Content</label>
+        <textarea id="ai-content" rows="5" placeholder="Paste or type content, or select text on the page..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="ai-category">Category</label>
+          <select id="ai-category"><option value="">All</option></select>
+        </div>
+        <div class="form-group flex-1">
+          <label for="ai-prompt">Prompt</label>
+          <select id="ai-prompt"><option value="">Select prompt</option></select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-generate">Generate</button>
+      <div id="ai-result" class="result-card hidden">
+        <div id="ai-result-text"></div>
+        <button class="btn btn-sm btn-outline copy-btn" id="btn-copy-ai">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tab 4: WhatsApp Send ── -->
+  <section id="tab-whatsapp" class="tab-panel">
+    <div class="panel-body">
+      <h2 class="panel-title">WhatsApp Send</h2>
+      <div class="form-group">
+        <label for="wa-phone">Phone number (with country code)</label>
+        <input id="wa-phone" type="tel" placeholder="+919876543210">
+      </div>
+      <div class="form-group">
+        <label for="wa-message">Message</label>
+        <textarea id="wa-message" rows="5" placeholder="Type your message..."></textarea>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-outline flex-1" id="btn-wa-use-ai">Use AI</button>
+        <button class="btn btn-primary flex-1" id="btn-wa-send">Send</button>
+      </div>
+      <div id="wa-preview" class="wa-preview hidden">
+        <div class="wa-preview-label">Preview</div>
+        <div id="wa-preview-text" class="wa-bubble"></div>
+      </div>
+      <div id="wa-result" class="result-card hidden"></div>
+    </div>
+  </section>
+
+  <!-- ── Settings ── -->
+  <section id="tab-settings" class="tab-panel">
+    <div class="panel-body">
+      <h2 class="panel-title">Settings</h2>
+      <div class="settings-user" id="settings-user"></div>
+      <div class="form-group">
+        <label for="settings-server">Server URL</label>
+        <input id="settings-server" type="url" placeholder="http://localhost:3000">
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-save-settings">Save Settings</button>
+      <hr>
+      <button class="btn btn-danger btn-block" id="btn-logout">Logout</button>
+    </div>
+  </section>
+</div>
+
+<!-- ───────── Snippet Modal ───────── -->
+<div id="snippet-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="snippet-modal-title">New Snippet</h3>
+      <button class="btn-icon modal-close" id="snippet-modal-close">&times;</button>
+    </div>
+    <form id="snippet-form">
+      <div class="form-group">
+        <label for="snippet-title-input">Title</label>
+        <input id="snippet-title-input" type="text" required>
+      </div>
+      <div class="form-group">
+        <label for="snippet-content-input">Content</label>
+        <textarea id="snippet-content-input" rows="5" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="snippet-folder-input">Folder</label>
+        <select id="snippet-folder-input" required></select>
+      </div>
+      <div class="form-group">
+        <label>Tags</label>
+        <div id="snippet-tags-input" class="tag-checkboxes"></div>
+      </div>
+      <input type="hidden" id="snippet-edit-id">
+      <div class="form-row">
+        <button type="submit" class="btn btn-primary flex-1">Save</button>
+        <button type="button" class="btn btn-outline flex-1" id="snippet-modal-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ───────── Folder Modal ───────── -->
+<div id="folder-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="folder-modal-title">New Folder</h3>
+      <button class="btn-icon modal-close" id="folder-modal-close">&times;</button>
+    </div>
+    <form id="folder-form">
+      <div class="form-group">
+        <label for="folder-name-input">Name</label>
+        <input id="folder-name-input" type="text" required>
+      </div>
+      <div class="form-group">
+        <label for="folder-parent-input">Parent Folder</label>
+        <select id="folder-parent-input"><option value="">None (root)</option></select>
+      </div>
+      <input type="hidden" id="folder-edit-id">
+      <div class="form-row">
+        <button type="submit" class="btn btn-primary flex-1">Save</button>
+        <button type="button" class="btn btn-outline flex-1" id="folder-modal-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ───────── Toast ───────── -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="popup.js"></script>
+</body>
+</html>
