@@ -18,6 +18,10 @@
   let selectedTagId = null;
   let snippets = [];
   let prompts = [];
+  let pinnedIds = [];
+
+  // Usage stats
+  let stats = { swipe: 0, email: 0, ai: 0, wa: 0, date: '' };
 
   // ── Helpers ────────────────────────────────────────────────────
   const $ = (sel) => document.querySelector(sel);
@@ -66,9 +70,17 @@
   // ── Storage helpers ────────────────────────────────────────────
   async function loadStorage() {
     return new Promise(function (resolve) {
-      chrome.storage.local.get(['serverUrl', 'token'], function (data) {
+      chrome.storage.local.get(['serverUrl', 'token', 'pinnedSnippets', 'usageStats'], function (data) {
         if (data.serverUrl) serverUrl = data.serverUrl;
         if (data.token) token = data.token;
+        if (data.pinnedSnippets) pinnedIds = data.pinnedSnippets;
+        if (data.usageStats) stats = data.usageStats;
+        // Daily reset
+        var today = new Date().toISOString().slice(0, 10);
+        if (stats.date !== today) {
+          stats = { swipe: 0, email: 0, ai: 0, wa: 0, date: today };
+          chrome.storage.local.set({ usageStats: stats });
+        }
         resolve();
       });
     });
@@ -82,6 +94,37 @@
   function saveServerUrl(url) {
     serverUrl = url;
     chrome.storage.local.set({ serverUrl: url });
+  }
+
+  function savePinnedIds() {
+    chrome.storage.local.set({ pinnedSnippets: pinnedIds });
+  }
+
+  function incrementStat(key) {
+    stats[key] = (stats[key] || 0) + 1;
+    chrome.storage.local.set({ usageStats: stats });
+    renderStats();
+  }
+
+  function renderStats() {
+    var map = { swipe: 'stat-swipe', email: 'stat-email', ai: 'stat-ai', wa: 'stat-wa' };
+    Object.keys(map).forEach(function (k) {
+      var el = $('#' + map[k]);
+      if (el) el.textContent = stats[k] || 0;
+    });
+    // Badges
+    var badgeMap = { swipe: 'badge-swipe', email: 'badge-email', ai: 'badge-ai', wa: 'badge-wa' };
+    Object.keys(badgeMap).forEach(function (k) {
+      var el = $('#' + badgeMap[k]);
+      if (!el) return;
+      var val = stats[k] || 0;
+      if (val > 0) {
+        el.textContent = val;
+        show(el);
+      } else {
+        hide(el);
+      }
+    });
   }
 
   // ── API helper ─────────────────────────────────────────────────
@@ -127,7 +170,7 @@
   function switchTab(tabName) {
     $$('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
     $$('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
-    var tabBtn = document.querySelector('[data-tab="' + tabName + '"]');
+    var tabBtn = document.querySelector('.tab-btn[data-tab="' + tabName + '"]');
     if (tabBtn) tabBtn.classList.add('active');
     var panel = $('#tab-' + tabName);
     if (panel) panel.classList.add('active');
@@ -239,7 +282,7 @@
     allDiv.dataset.id = '';
     var iconSpan = document.createElement('span');
     iconSpan.className = 'folder-icon';
-    iconSpan.textContent = '\uD83D\uDCC1'; // folder emoji
+    iconSpan.textContent = '\uD83D\uDCC1';
     allDiv.appendChild(iconSpan);
     var nameSpan = document.createElement('span');
     nameSpan.className = 'folder-name';
@@ -263,7 +306,6 @@
       item.className = 'folder-item' + (selectedFolderId === f.id ? ' selected' : '');
       item.dataset.id = f.id;
 
-      // Toggle arrow
       if (hasChildren) {
         var toggle = document.createElement('span');
         toggle.className = 'folder-toggle';
@@ -278,7 +320,7 @@
 
       var icon = document.createElement('span');
       icon.className = 'folder-icon';
-      icon.textContent = '\uD83D\uDCC2'; // open folder emoji
+      icon.textContent = '\uD83D\uDCC2';
       item.appendChild(icon);
 
       var name = document.createElement('span');
@@ -286,7 +328,6 @@
       name.textContent = f.name;
       item.appendChild(name);
 
-      // Actions
       var actions = document.createElement('span');
       actions.className = 'folder-actions';
 
@@ -476,91 +517,198 @@
     if (snippets.length === 0) {
       var empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.textContent = 'No snippets found.';
+      var emptyIcon = document.createElement('span');
+      emptyIcon.className = 'empty-state-icon';
+      emptyIcon.textContent = '\uD83D\uDCCB';
+      empty.appendChild(emptyIcon);
+      empty.appendChild(document.createTextNode('No snippets found'));
       list.appendChild(empty);
       return;
     }
 
+    // Separate pinned vs unpinned
+    var pinned = [];
+    var unpinned = [];
     snippets.forEach(function (s) {
-      var card = document.createElement('div');
-      card.className = 'snippet-card';
-
-      // Header
-      var header = document.createElement('div');
-      header.className = 'snippet-card-header';
-
-      var title = document.createElement('span');
-      title.className = 'snippet-card-title';
-      title.textContent = s.title;
-      header.appendChild(title);
-
-      var actionsSpan = document.createElement('span');
-      actionsSpan.className = 'snippet-card-actions';
-
-      var copyBtn = document.createElement('button');
-      copyBtn.className = 'btn-icon btn-copy-snippet';
-      copyBtn.title = 'Copy';
-      copyBtn.textContent = '\uD83D\uDCCB'; // clipboard emoji
-      copyBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        navigator.clipboard.writeText(s.content).then(function () { toast('Copied!', 'success'); });
-      });
-      actionsSpan.appendChild(copyBtn);
-
-      var editBtnS = document.createElement('button');
-      editBtnS.className = 'btn-icon btn-edit-snippet';
-      editBtnS.title = 'Edit';
-      editBtnS.textContent = '\u270E';
-      editBtnS.addEventListener('click', function (e) {
-        e.stopPropagation();
-        openSnippetModal(s);
-      });
-      actionsSpan.appendChild(editBtnS);
-
-      var delBtnS = document.createElement('button');
-      delBtnS.className = 'btn-icon btn-del-snippet';
-      delBtnS.title = 'Delete';
-      delBtnS.textContent = '\u00D7';
-      delBtnS.addEventListener('click', function (e) {
-        e.stopPropagation();
-        deleteSnippet(s.id);
-      });
-      actionsSpan.appendChild(delBtnS);
-
-      header.appendChild(actionsSpan);
-      card.appendChild(header);
-
-      // Preview
-      var preview = document.createElement('div');
-      preview.className = 'snippet-card-preview';
-      preview.textContent = s.content;
-      card.appendChild(preview);
-
-      // Tags
-      if (s.tags && s.tags.length > 0) {
-        var tagsDiv = document.createElement('div');
-        tagsDiv.className = 'snippet-card-tags';
-        s.tags.forEach(function (st) {
-          var tag = st.tag;
-          if (!tag) return;
-          var tagSpan = document.createElement('span');
-          tagSpan.className = 'snippet-tag';
-          tagSpan.style.background = tag.color + '22';
-          tagSpan.style.color = tag.color;
-          tagSpan.textContent = tag.name;
-          tagsDiv.appendChild(tagSpan);
-        });
-        card.appendChild(tagsDiv);
+      if (pinnedIds.indexOf(s.id) !== -1) {
+        pinned.push(s);
+      } else {
+        unpinned.push(s);
       }
-
-      // Expand on click
-      card.addEventListener('click', function (e) {
-        if (e.target.closest('.snippet-card-actions')) return;
-        preview.classList.toggle('expanded');
-      });
-
-      list.appendChild(card);
     });
+
+    if (pinned.length > 0) {
+      var sep = document.createElement('div');
+      sep.className = 'pinned-separator';
+      sep.textContent = '\u2B50 Pinned';
+      list.appendChild(sep);
+      pinned.forEach(function (s) { list.appendChild(createSnippetCard(s, true)); });
+    }
+
+    if (unpinned.length > 0 && pinned.length > 0) {
+      var sep2 = document.createElement('div');
+      sep2.className = 'pinned-separator';
+      sep2.textContent = 'All';
+      list.appendChild(sep2);
+    }
+
+    unpinned.forEach(function (s) { list.appendChild(createSnippetCard(s, false)); });
+  }
+
+  function createSnippetCard(s, isPinned) {
+    var card = document.createElement('div');
+    card.className = 'snippet-card' + (isPinned ? ' pinned' : '');
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'snippet-card-header';
+
+    var title = document.createElement('span');
+    title.className = 'snippet-card-title';
+    title.textContent = s.title;
+    header.appendChild(title);
+
+    var actionsSpan = document.createElement('span');
+    actionsSpan.className = 'snippet-card-actions';
+
+    // Pin button
+    var pinBtn = document.createElement('button');
+    pinBtn.className = 'btn-icon btn-pin' + (isPinned ? ' pinned' : '');
+    pinBtn.title = isPinned ? 'Unpin' : 'Pin';
+    pinBtn.textContent = '\u2605';
+    pinBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      togglePin(s.id);
+    });
+    actionsSpan.appendChild(pinBtn);
+
+    // Insert button
+    var insertBtn = document.createElement('button');
+    insertBtn.className = 'btn-icon';
+    insertBtn.title = 'Insert into page';
+    insertBtn.textContent = '\u2B07';
+    insertBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      insertSnippet(s.content);
+    });
+    actionsSpan.appendChild(insertBtn);
+
+    // Copy button
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-icon btn-copy-snippet';
+    copyBtn.title = 'Copy';
+    copyBtn.textContent = '\uD83D\uDCCB';
+    copyBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      navigator.clipboard.writeText(s.content).then(function () {
+        toast('Copied!', 'success');
+        incrementStat('swipe');
+      });
+    });
+    actionsSpan.appendChild(copyBtn);
+
+    // Edit button
+    var editBtnS = document.createElement('button');
+    editBtnS.className = 'btn-icon btn-edit-snippet';
+    editBtnS.title = 'Edit';
+    editBtnS.textContent = '\u270E';
+    editBtnS.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openSnippetModal(s);
+    });
+    actionsSpan.appendChild(editBtnS);
+
+    // Delete button
+    var delBtnS = document.createElement('button');
+    delBtnS.className = 'btn-icon btn-del-snippet';
+    delBtnS.title = 'Delete';
+    delBtnS.textContent = '\u00D7';
+    delBtnS.addEventListener('click', function (e) {
+      e.stopPropagation();
+      deleteSnippet(s.id);
+    });
+    actionsSpan.appendChild(delBtnS);
+
+    header.appendChild(actionsSpan);
+    card.appendChild(header);
+
+    // Preview
+    var preview = document.createElement('div');
+    preview.className = 'snippet-card-preview';
+    preview.textContent = s.content;
+    card.appendChild(preview);
+
+    // Tags
+    if (s.tags && s.tags.length > 0) {
+      var tagsDiv = document.createElement('div');
+      tagsDiv.className = 'snippet-card-tags';
+      s.tags.forEach(function (st) {
+        var tag = st.tag;
+        if (!tag) return;
+        var tagSpan = document.createElement('span');
+        tagSpan.className = 'snippet-tag';
+        tagSpan.style.background = tag.color + '22';
+        tagSpan.style.color = tag.color;
+        tagSpan.textContent = tag.name;
+        tagsDiv.appendChild(tagSpan);
+      });
+      card.appendChild(tagsDiv);
+    }
+
+    // Expand on click
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('.snippet-card-actions')) return;
+      preview.classList.toggle('expanded');
+    });
+
+    return card;
+  }
+
+  function togglePin(id) {
+    var idx = pinnedIds.indexOf(id);
+    if (idx !== -1) {
+      pinnedIds.splice(idx, 1);
+    } else {
+      pinnedIds.push(id);
+    }
+    savePinnedIds();
+    renderSnippets();
+  }
+
+  async function insertSnippet(content) {
+    try {
+      var tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tabs || !tabs[0]) throw new Error('No active tab');
+      await chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: function (text) {
+          var el = document.activeElement;
+          if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' || el.isContentEditable)) {
+            if (el.isContentEditable) {
+              document.execCommand('insertText', false, text);
+            } else {
+              var start = el.selectionStart || 0;
+              var end = el.selectionEnd || 0;
+              var val = el.value;
+              el.value = val.slice(0, start) + text + val.slice(end);
+              el.selectionStart = el.selectionEnd = start + text.length;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            return true;
+          }
+          return false;
+        },
+        args: [content]
+      });
+      toast('Inserted!', 'success');
+      incrementStat('swipe');
+    } catch (err) {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(content).then(function () {
+        toast('Copied to clipboard (insert failed)', 'info');
+        incrementStat('swipe');
+      });
+    }
   }
 
   // Snippet modal
@@ -630,6 +778,23 @@
   //  EMAIL VALIDATOR
   // ══════════════════════════════════════════════════════════════
   function initEmailValidator() {
+    // Mode toggle
+    $$('.mode-toggle-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $$('.mode-toggle-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var mode = btn.dataset.mode;
+        if (mode === 'single') {
+          show($('#email-single-mode'));
+          hide($('#email-bulk-mode'));
+        } else {
+          hide($('#email-single-mode'));
+          show($('#email-bulk-mode'));
+        }
+      });
+    });
+
+    // Single validate
     $('#btn-validate-email').addEventListener('click', async function () {
       var email = $('#validate-email-input').value.trim();
       if (!email) return toast('Enter an email address', 'error');
@@ -642,6 +807,7 @@
         var data = await api('POST', '/api/validate-email', { email: email });
         show(resultEl);
         renderEmailResult(data, resultEl);
+        incrementStat('email');
       } catch (err) {
         show(resultEl);
         resultEl.textContent = '';
@@ -653,6 +819,109 @@
         setLoading(btn, false);
       }
     });
+
+    // Bulk validate
+    $('#btn-validate-bulk').addEventListener('click', async function () {
+      var raw = $('#bulk-email-input').value.trim();
+      if (!raw) return toast('Paste email addresses', 'error');
+      var emails = raw.split('\n').map(function (e) { return e.trim(); }).filter(function (e) { return e.length > 0; });
+      if (emails.length === 0) return toast('No valid emails found', 'error');
+
+      var btn = $('#btn-validate-bulk');
+      setLoading(btn, true);
+      var progressEl = $('#bulk-progress');
+      var progressFill = $('#bulk-progress-fill');
+      var progressText = $('#bulk-progress-text');
+      var resultsEl = $('#bulk-results');
+      var controlsEl = $('#bulk-results-controls');
+      show(progressEl);
+      hide(resultsEl);
+      hide(controlsEl);
+
+      var results = [];
+      for (var i = 0; i < emails.length; i++) {
+        progressFill.style.width = ((i + 1) / emails.length * 100) + '%';
+        progressText.textContent = (i + 1) + '/' + emails.length;
+        try {
+          var data = await api('POST', '/api/validate-email', { email: emails[i] });
+          results.push({ email: emails[i], status: data.status || 'unknown', data: data });
+          incrementStat('email');
+        } catch (err) {
+          results.push({ email: emails[i], status: 'error', error: err.message });
+        }
+      }
+
+      setLoading(btn, false);
+      show(controlsEl);
+      show(resultsEl);
+      renderBulkResults(results);
+
+      // Store results for filtering and copy
+      resultsEl._data = results;
+    });
+
+    // Filter toggle
+    $('#bulk-filter-valid').addEventListener('change', function () {
+      var resultsEl = $('#bulk-results');
+      if (!resultsEl._data) return;
+      renderBulkResults(resultsEl._data);
+    });
+
+    // Copy bulk results
+    $('#btn-copy-bulk').addEventListener('click', function () {
+      var resultsEl = $('#bulk-results');
+      if (!resultsEl._data) return;
+      var filterValid = $('#bulk-filter-valid').checked;
+      var lines = resultsEl._data
+        .filter(function (r) { return !filterValid || r.status === 'valid' || r.status === 'safe'; })
+        .map(function (r) { return r.email + ' — ' + r.status; });
+      navigator.clipboard.writeText(lines.join('\n')).then(function () {
+        toast('Results copied!', 'success');
+      });
+    });
+  }
+
+  function renderBulkResults(results) {
+    var el = $('#bulk-results');
+    el.textContent = '';
+    var filterValid = $('#bulk-filter-valid').checked;
+    var safeStatuses = ['valid', 'safe'];
+
+    results.forEach(function (r) {
+      if (filterValid && safeStatuses.indexOf(r.status) === -1) return;
+
+      var item = document.createElement('div');
+      item.className = 'bulk-result-item';
+
+      var emailSpan = document.createElement('span');
+      emailSpan.className = 'bulk-result-email';
+      emailSpan.textContent = r.email;
+      item.appendChild(emailSpan);
+
+      var pill = document.createElement('span');
+      pill.className = 'status-pill';
+      var badStatuses = ['invalid', 'disabled', 'spamtrap', 'error'];
+      if (safeStatuses.indexOf(r.status) !== -1) {
+        pill.classList.add('valid');
+      } else if (badStatuses.indexOf(r.status) !== -1) {
+        pill.classList.add('invalid');
+      } else {
+        pill.classList.add('risky');
+      }
+      pill.textContent = r.status;
+      item.appendChild(pill);
+
+      el.appendChild(item);
+    });
+
+    if (el.children.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'bulk-result-item';
+      empty.textContent = 'No results match filter';
+      empty.style.justifyContent = 'center';
+      empty.style.color = 'var(--gray-400)';
+      el.appendChild(empty);
+    }
   }
 
   function renderEmailResult(data, el) {
@@ -685,7 +954,6 @@
 
       var value = document.createElement('span');
       value.className = 'result-value';
-      // Apply status class to the Status row
       if (idx === 1) value.className += ' ' + statusClass;
       value.textContent = pair[1];
       row.appendChild(value);
@@ -771,6 +1039,7 @@
         var data = await api('POST', '/api/generate', { content: content, promptId: promptId });
         $('#ai-result-text').textContent = data.result || '';
         show($('#ai-result'));
+        incrementStat('ai');
 
         // If WhatsApp callback is pending, send result back
         if (window._waAICallback) {
@@ -797,9 +1066,7 @@
       var subjectMatch = text.match(/^Subject:\s*(.+)/im);
       if (subjectMatch) {
         subject = subjectMatch[1].trim();
-        // Remove the subject line from body and clean up
         body = text.replace(/^Subject:\s*.+\n*/im, '').trim();
-        // Remove "Email:" prefix if present
         body = body.replace(/^Email:\s*\n*/im, '').trim();
       }
 
@@ -890,6 +1157,7 @@
         }
 
         toast('Message sent!', 'success');
+        incrementStat('wa');
       } catch (err) {
         var resultEl2 = $('#wa-result');
         show(resultEl2);
@@ -905,7 +1173,6 @@
     $('#btn-wa-use-ai').addEventListener('click', async function () {
       switchTab('ai');
 
-      // Try to set category to "whatsapp"
       var catSel = $('#ai-category');
       var waOption = Array.from(catSel.options).find(function (o) { return o.value.toLowerCase().indexOf('whatsapp') !== -1; });
       if (waOption) {
@@ -914,7 +1181,6 @@
         renderPromptDropdown();
       }
 
-      // Set up callback: when AI generates, populate WA message
       window._waAICallback = function (text) {
         msgEl.value = text;
         msgEl.dispatchEvent(new Event('input'));
@@ -933,6 +1199,7 @@
       return;
     }
     renderUserInfo();
+    renderStats();
     $('#settings-server').value = serverUrl;
 
     // Load data in parallel
@@ -968,6 +1235,7 @@
     initEmailValidator();
     initAIGenerator();
     initWhatsApp();
+    renderStats();
 
     if (token) {
       showApp();
