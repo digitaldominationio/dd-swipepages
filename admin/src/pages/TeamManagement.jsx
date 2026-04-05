@@ -5,6 +5,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function TeamManagement() {
   const [users, setUsers] = useState([]);
+  const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
@@ -12,19 +13,23 @@ export default function TeamManagement() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
-      const data = await api.getUsers();
-      setUsers(data);
+      const [usersData, invitesData] = await Promise.all([
+        api.getUsers(),
+        api.getInvites(),
+      ]);
+      setUsers(usersData);
+      setInvites(invitesData);
     } catch (err) {
-      toast.error('Failed to load users');
+      toast.error('Failed to load team data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
   const handleInvite = async (e) => {
@@ -38,6 +43,7 @@ export default function TeamManagement() {
       setInviteResult(result);
       setInviteEmail('');
       toast.success(`Invite sent to ${result.email}`);
+      fetchData();
     } catch (err) {
       toast.error(err.message || 'Failed to send invite');
     } finally {
@@ -96,6 +102,38 @@ export default function TeamManagement() {
           </div>
         )}
       </div>
+
+      {invites.length > 0 && (
+        <div className="card">
+          <h3>Pending Invites ({invites.length})</h3>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Sent</th>
+                  <th>Expires</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((inv) => (
+                  <tr key={inv.id}>
+                    <td>{inv.email}</td>
+                    <td>{formatDate(inv.createdAt)}</td>
+                    <td>{formatDate(inv.expiresAt)}</td>
+                    <td>
+                      <span className={`badge ${new Date(inv.expiresAt) < new Date() ? 'badge-expired' : 'badge-pending'}`}>
+                        {new Date(inv.expiresAt) < new Date() ? 'Expired' : 'Pending'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3>Team Members ({users.length})</h3>

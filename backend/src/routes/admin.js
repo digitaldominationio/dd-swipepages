@@ -37,6 +37,21 @@ router.post('/invite', async (req, res) => {
   }
 });
 
+// GET /api/admin/invites (pending invites)
+router.get('/invites', async (req, res) => {
+  try {
+    const invites = await req.prisma.inviteToken.findMany({
+      where: { usedAt: null },
+      select: { id: true, email: true, expiresAt: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(invites);
+  } catch (err) {
+    console.error('List invites error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/admin/users
 router.get('/users', async (req, res) => {
   try {

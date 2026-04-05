@@ -55,6 +55,7 @@ const api = {
 
   // Admin - Users
   getUsers: () => request('/admin/users'),
+  getInvites: () => request('/admin/invites'),
   deleteUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
   inviteUser: (email) =>
     request('/admin/invite', {
