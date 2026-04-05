@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { createInviteToken } = require('../utils/invite');
 const { encrypt, decrypt } = require('../services/encryption');
+const { sendInviteEmail } = require('../services/email');
 
 const router = Router();
 
@@ -19,7 +20,17 @@ router.post('/invite', async (req, res) => {
       data: { token, email, expiresAt },
     });
 
-    res.status(201).json({ inviteToken: token, email, expiresAt });
+    // Send invite email
+    try {
+      const inviterName = req.user?.name || req.user?.email || '';
+      await sendInviteEmail(email, token, inviterName);
+    } catch (emailErr) {
+      console.error('Failed to send invite email:', emailErr.message);
+      // Still return success — invite was created, email just failed
+      return res.status(201).json({ inviteToken: token, email, expiresAt, emailSent: false, emailError: emailErr.message });
+    }
+
+    res.status(201).json({ inviteToken: token, email, expiresAt, emailSent: true });
   } catch (err) {
     console.error('Invite error:', err);
     res.status(500).json({ error: 'Internal server error' });
