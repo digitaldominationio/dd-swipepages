@@ -15,8 +15,9 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    const result = await generateText(req.prisma, prompt.promptText, content);
-    res.json({ result });
+    const data = await generateText(req.prisma, prompt.promptText, content);
+    const text = data.choices?.[0]?.message?.content || '';
+    res.json({ result: text });
   } catch (err) {
     console.error('Generation error:', err);
     res.status(500).json({ error: err.message });

@@ -657,17 +657,21 @@
 
   function renderEmailResult(data, el) {
     el.textContent = '';
-    var statusClass = data.status === 'valid' ? 'status-valid'
-      : data.status === 'invalid' ? 'status-invalid' : 'status-risky';
+    var safeStatuses = ['valid', 'safe'];
+    var badStatuses = ['invalid', 'disabled', 'spamtrap'];
+    var statusClass = safeStatuses.indexOf(data.status) !== -1 ? 'status-valid'
+      : badStatuses.indexOf(data.status) !== -1 ? 'status-invalid' : 'status-risky';
 
     var rows = [
       ['Email', data.email || ''],
       ['Status', data.status || ''],
-      ['Risk Score', String(data.riskScore != null ? data.riskScore : (data.risk_score != null ? data.risk_score : '-'))],
-      ['Provider', data.provider || data.mxProvider || '-'],
-      ['Disposable', data.disposable != null ? String(data.disposable) : '-'],
-      ['Role-based', data.roleBased != null ? String(data.roleBased) : (data.role_based != null ? String(data.role_based) : '-')],
-      ['Catch-all', data.catchAll != null ? String(data.catchAll) : (data.catch_all != null ? String(data.catch_all) : '-')],
+      ['Overall Score', String(data.overall_score != null ? data.overall_score + '/100' : '-')],
+      ['Safe to Send', data.is_safe_to_send != null ? String(data.is_safe_to_send) : '-'],
+      ['Deliverable', data.is_deliverable != null ? String(data.is_deliverable) : '-'],
+      ['Catch-All', data.is_catch_all != null ? String(data.is_catch_all) : '-'],
+      ['Disposable', data.is_disposable != null ? String(data.is_disposable) : '-'],
+      ['Role Account', data.is_role_account != null ? String(data.is_role_account) : '-'],
+      ['Free Email', data.is_free_email != null ? String(data.is_free_email) : '-'],
     ];
 
     rows.forEach(function (pair, idx) {
