@@ -15,7 +15,13 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    const data = await generateText(req.prisma, prompt.promptText, content);
+    // Replace any placeholder in the prompt with the actual content
+    let systemPrompt = prompt.promptText;
+    if (systemPrompt.includes('{PASTE_SELECTED_WEBSITE_TEXT}')) {
+      systemPrompt = systemPrompt.replace('{PASTE_SELECTED_WEBSITE_TEXT}', content);
+    }
+
+    const data = await generateText(req.prisma, systemPrompt, content);
     const text = data.choices?.[0]?.message?.content || '';
     res.json({ result: text });
   } catch (err) {
