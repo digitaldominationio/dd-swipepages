@@ -3,6 +3,8 @@
 # =============================================================================
 FROM node:20-alpine AS admin-builder
 
+ENV NODE_ENV=development
+
 WORKDIR /app/admin
 
 COPY admin/package*.json ./
@@ -15,6 +17,8 @@ RUN npm run build
 # Stage 2: Build the backend (install deps, generate Prisma client)
 # =============================================================================
 FROM node:20-alpine AS backend-builder
+
+ENV NODE_ENV=development
 
 WORKDIR /app
 
