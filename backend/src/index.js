@@ -49,6 +49,11 @@ app.use('/api/whatsapp', authMiddleware, whatsappRoutes);
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
+// Privacy policy page (required for Chrome Web Store)
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'privacy.html'));
+});
+
 // Serve admin panel static files (built by Vite, copied into public/admin)
 const adminBuildPath = path.join(__dirname, '..', 'public', 'admin');
 app.use('/admin', express.static(adminBuildPath));
