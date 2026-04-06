@@ -17,7 +17,7 @@ async function sendInviteEmail(email, inviteToken, inviterName) {
   const fromEmail = process.env.EMAIL_SMTP_FROM_EMAIL || 'noreply@swipetoolkit.com';
   const fromName = process.env.EMAIL_SMTP_FROM_NAME || 'Swipe Toolkit';
   const appUrl = process.env.APP_URL || 'https://chrex.ddmn.in';
-  const inviteLink = `${appUrl}/admin/#/accept-invite?token=${encodeURIComponent(inviteToken)}`;
+  const inviteLink = `${appUrl}/admin/accept-invite?token=${encodeURIComponent(inviteToken)}`;
 
   await transport.sendMail({
     from: `"${fromName}" <${fromEmail}>`,
