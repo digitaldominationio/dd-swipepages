@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const { logActivity } = require('../middleware/activityLog');
 
 const router = Router();
 
@@ -63,6 +64,7 @@ router.post('/', async (req, res) => {
       include: snippetInclude,
     });
 
+    await logActivity(req.prisma, req.user.id, 'create', 'snippet', snippet.id);
     res.status(201).json(snippet);
   } catch (err) {
     console.error('Create snippet error:', err);

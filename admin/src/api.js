@@ -53,6 +53,9 @@ const api = {
 
   me: () => request('/auth/me'),
 
+  // Admin - Dashboard
+  getDashboard: () => request('/admin/dashboard'),
+
   // Admin - Users
   getUsers: () => request('/admin/users'),
   getInvites: () => request('/admin/invites'),

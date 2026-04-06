@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { generateText } = require('../services/openai');
+const { logActivity } = require('../middleware/activityLog');
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.post('/', async (req, res) => {
 
     const data = await generateText(req.prisma, systemPrompt, content);
     const text = data.choices?.[0]?.message?.content || '';
+    await logActivity(req.prisma, req.user.id, 'generate', 'ai_generation', promptId);
     res.json({ result: text });
   } catch (err) {
     console.error('Generation error:', err);

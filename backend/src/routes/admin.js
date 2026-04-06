@@ -5,6 +5,116 @@ const { sendInviteEmail } = require('../services/email');
 
 const router = Router();
 
+// GET /api/admin/dashboard — comprehensive stats
+router.get('/dashboard', async (req, res) => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Counts
+    const [
+      totalUsers,
+      totalSnippets,
+      totalFolders,
+      totalPrompts,
+      totalTags,
+      pendingInvites,
+    ] = await Promise.all([
+      req.prisma.user.count(),
+      req.prisma.snippet.count(),
+      req.prisma.folder.count(),
+      req.prisma.prompt.count(),
+      req.prisma.tag.count(),
+      req.prisma.inviteToken.count({ where: { usedAt: null } }),
+    ]);
+
+    // Activity counts by type
+    const [
+      aiGenerationsTotal,
+      emailValidationsTotal,
+      whatsappMessagesTotal,
+      aiGenerationsToday,
+      emailValidationsToday,
+      whatsappMessagesToday,
+      aiGenerationsWeek,
+      emailValidationsWeek,
+      whatsappMessagesWeek,
+    ] = await Promise.all([
+      req.prisma.activityLog.count({ where: { action: 'generate' } }),
+      req.prisma.activityLog.count({ where: { action: 'validate' } }),
+      req.prisma.activityLog.count({ where: { action: 'send', entityType: 'whatsapp_message' } }),
+      req.prisma.activityLog.count({ where: { action: 'generate', createdAt: { gte: today } } }),
+      req.prisma.activityLog.count({ where: { action: 'validate', createdAt: { gte: today } } }),
+      req.prisma.activityLog.count({ where: { action: 'send', entityType: 'whatsapp_message', createdAt: { gte: today } } }),
+      req.prisma.activityLog.count({ where: { action: 'generate', createdAt: { gte: weekAgo } } }),
+      req.prisma.activityLog.count({ where: { action: 'validate', createdAt: { gte: weekAgo } } }),
+      req.prisma.activityLog.count({ where: { action: 'send', entityType: 'whatsapp_message', createdAt: { gte: weekAgo } } }),
+    ]);
+
+    // Recent activity (last 20)
+    const recentActivity = await req.prisma.activityLog.findMany({
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { name: true, email: true } } },
+    });
+
+    // Activity per user (top contributors)
+    const userActivity = await req.prisma.activityLog.groupBy({
+      by: ['userId'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 10,
+    });
+
+    // Enrich with user names
+    const userIds = userActivity.map((u) => u.userId);
+    const users = await req.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true },
+    });
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+    const topContributors = userActivity.map((u) => ({
+      user: userMap[u.userId] || { name: 'Unknown', email: '' },
+      totalActions: u._count.id,
+    }));
+
+    // Snippets created this week
+    const snippetsThisWeek = await req.prisma.snippet.count({
+      where: { createdAt: { gte: weekAgo } },
+    });
+
+    // New users this month
+    const newUsersThisMonth = await req.prisma.user.count({
+      where: { createdAt: { gte: monthAgo } },
+    });
+
+    res.json({
+      overview: {
+        totalUsers,
+        totalSnippets,
+        totalFolders,
+        totalPrompts,
+        totalTags,
+        pendingInvites,
+        newUsersThisMonth,
+        snippetsThisWeek,
+      },
+      usage: {
+        aiGenerations: { total: aiGenerationsTotal, today: aiGenerationsToday, thisWeek: aiGenerationsWeek },
+        emailValidations: { total: emailValidationsTotal, today: emailValidationsToday, thisWeek: emailValidationsWeek },
+        whatsappMessages: { total: whatsappMessagesTotal, today: whatsappMessagesToday, thisWeek: whatsappMessagesWeek },
+      },
+      recentActivity,
+      topContributors,
+    });
+  } catch (err) {
+    console.error('Dashboard stats error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // POST /api/admin/invite
 router.post('/invite', async (req, res) => {
   try {

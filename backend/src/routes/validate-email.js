@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { validateEmail } = require('../services/reoon');
+const { logActivity } = require('../middleware/activityLog');
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.post('/', async (req, res) => {
     }
 
     const result = await validateEmail(req.prisma, email);
+    await logActivity(req.prisma, req.user.id, 'validate', 'email_validation', email);
     res.json(result);
   } catch (err) {
     console.error('Email validation error:', err);
