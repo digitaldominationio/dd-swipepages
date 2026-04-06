@@ -50,12 +50,7 @@ export default function AcceptInvite() {
         throw new Error(data.error || 'Failed to accept invite');
       }
 
-      // Store token and redirect to login
-      localStorage.setItem('token', data.token);
       setSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/admin/';
-      }, 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -70,8 +65,8 @@ export default function AcceptInvite() {
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
             <h2>Account Created!</h2>
-            <p style={{ color: '#64748b', marginTop: 8 }}>
-              Redirecting to the dashboard...
+            <p style={{ color: '#64748b', marginTop: 8, lineHeight: 1.6 }}>
+              You're all set! Log in using the <strong>Swipe Toolkit Chrome Extension</strong> with the email and password you just created.
             </p>
           </div>
         </div>
