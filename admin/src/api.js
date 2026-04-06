@@ -57,6 +57,7 @@ const api = {
   getUsers: () => request('/admin/users'),
   getInvites: () => request('/admin/invites'),
   deleteUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
+  deleteInvite: (id) => request(`/admin/invites/${id}`, { method: 'DELETE' }),
   inviteUser: (email) =>
     request('/admin/invite', {
       method: 'POST',

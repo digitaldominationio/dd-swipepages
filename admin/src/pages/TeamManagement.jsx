@@ -64,6 +64,16 @@ export default function TeamManagement() {
     }
   };
 
+  const handleDeleteInvite = async (invite) => {
+    try {
+      await api.deleteInvite(invite.id);
+      setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      toast.success(`Invite for ${invite.email} deleted`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete invite');
+    }
+  };
+
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -114,6 +124,7 @@ export default function TeamManagement() {
                   <th>Sent</th>
                   <th>Expires</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,6 +137,14 @@ export default function TeamManagement() {
                       <span className={`badge ${new Date(inv.expiresAt) < new Date() ? 'badge-expired' : 'badge-pending'}`}>
                         {new Date(inv.expiresAt) < new Date() ? 'Expired' : 'Pending'}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteInvite(inv)}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

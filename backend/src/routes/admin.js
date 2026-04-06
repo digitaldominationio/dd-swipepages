@@ -52,6 +52,17 @@ router.get('/invites', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/invites/:id
+router.delete('/invites/:id', async (req, res) => {
+  try {
+    await req.prisma.inviteToken.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete invite error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/admin/users
 router.get('/users', async (req, res) => {
   try {
