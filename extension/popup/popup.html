@@ -163,6 +163,57 @@
     </div>
   </section>
 
+  <!-- ── Tab 5: Upwork Proposal Writer ── -->
+  <section id="tab-proposal" class="tab-panel">
+    <div class="tab-header">
+      <span class="tab-header-title">Proposal Writer</span>
+      <span class="tab-stat" id="stat-proposal" title="Proposals generated today">0</span>
+    </div>
+    <div class="panel-body">
+      <div id="proposal-detect" class="proposal-detect">
+        <button class="btn btn-primary btn-block" id="btn-detect-job">Detect Upwork Job</button>
+        <p class="hint-text" id="proposal-hint">Navigate to an Upwork job posting, then click detect.</p>
+      </div>
+      <div id="proposal-job-info" class="hidden">
+        <div class="job-info-card">
+          <div class="job-info-title" id="proposal-job-title"></div>
+          <div class="job-info-meta">
+            <span class="job-info-budget" id="proposal-job-budget"></span>
+            <span class="job-info-skills" id="proposal-job-skills"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="proposal-job-desc">Job Description</label>
+          <textarea id="proposal-job-desc" rows="4" placeholder="Job description will be auto-filled..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="proposal-tone">Tone</label>
+          <select id="proposal-tone">
+            <option value="professional">Professional</option>
+            <option value="friendly">Friendly</option>
+            <option value="confident">Confident</option>
+            <option value="concise">Concise & Direct</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="proposal-highlights">Your Key Skills / Highlights (optional)</label>
+          <textarea id="proposal-highlights" rows="2" placeholder="e.g., 5 years React experience, built 20+ apps..."></textarea>
+        </div>
+        <div class="form-row">
+          <button class="btn btn-primary flex-1" id="btn-generate-proposal">Write Proposal</button>
+          <button class="btn btn-outline flex-1" id="btn-clear-proposal">Clear</button>
+        </div>
+      </div>
+      <div id="proposal-result" class="result-card hidden">
+        <div id="proposal-result-text"></div>
+        <div class="result-actions">
+          <button class="btn btn-sm btn-outline copy-btn" id="btn-copy-proposal">Copy</button>
+          <button class="btn btn-sm btn-outline" id="btn-refine-proposal">Refine</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Settings ── -->
   <section id="tab-settings" class="tab-panel">
     <div class="tab-header">
@@ -196,6 +247,11 @@
       <span class="tab-icon">&#128172;</span>
       <span class="tab-label">WA</span>
       <span class="tab-badge hidden" id="badge-wa"></span>
+    </button>
+    <button class="tab-btn" data-tab="proposal">
+      <span class="tab-icon">&#128221;</span>
+      <span class="tab-label">Proposal</span>
+      <span class="tab-badge hidden" id="badge-proposal"></span>
     </button>
     <button class="tab-btn" data-tab="settings">
       <span class="tab-icon">&#9881;</span>

@@ -103,13 +103,13 @@
   }
 
   function renderStats() {
-    var map = { swipe: 'stat-swipe', email: 'stat-email', ai: 'stat-ai', wa: 'stat-wa' };
+    var map = { swipe: 'stat-swipe', email: 'stat-email', ai: 'stat-ai', wa: 'stat-wa', proposal: 'stat-proposal' };
     Object.keys(map).forEach(function (k) {
       var el = $('#' + map[k]);
       if (el) el.textContent = stats[k] || 0;
     });
     // Badges
-    var badgeMap = { swipe: 'badge-swipe', email: 'badge-email', ai: 'badge-ai', wa: 'badge-wa' };
+    var badgeMap = { swipe: 'badge-swipe', email: 'badge-email', ai: 'badge-ai', wa: 'badge-wa', proposal: 'badge-proposal' };
     Object.keys(badgeMap).forEach(function (k) {
       var el = $('#' + badgeMap[k]);
       if (!el) return;
@@ -1173,6 +1173,116 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  //  PROPOSAL WRITER
+  // ══════════════════════════════════════════════════════════════
+  function initProposalWriter() {
+    $('#btn-detect-job').addEventListener('click', async function () {
+      var btn = $('#btn-detect-job');
+      setLoading(btn, true);
+      try {
+        var tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs[0]) { toast('No active tab found', 'error'); return; }
+
+        var response = await chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_UPWORK_JOB' });
+        if (!response || !response.isUpwork) {
+          $('#proposal-hint').textContent = 'Not on an Upwork job page. Navigate to a job posting first.';
+          toast('Not an Upwork job page', 'error');
+          return;
+        }
+
+        if (!response.description) {
+          $('#proposal-hint').textContent = 'Could not detect job description. Try selecting the text manually.';
+          toast('No job description found', 'error');
+          return;
+        }
+
+        // Fill in the job info
+        $('#proposal-job-title').textContent = response.title || 'Untitled Job';
+        $('#proposal-job-budget').textContent = response.budget || '';
+        $('#proposal-job-skills').textContent = response.skills || '';
+        $('#proposal-job-desc').value = response.description;
+
+        hide($('#proposal-detect'));
+        show($('#proposal-job-info'));
+        toast('Job detected!', 'success');
+      } catch (err) {
+        $('#proposal-hint').textContent = 'Could not connect to page. Try refreshing the Upwork tab.';
+        toast('Detection failed', 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    $('#btn-generate-proposal').addEventListener('click', async function () {
+      var btn = $('#btn-generate-proposal');
+      var desc = $('#proposal-job-desc').value.trim();
+      if (!desc) { toast('Job description is empty', 'error'); return; }
+
+      setLoading(btn, true);
+      hide($('#proposal-result'));
+      try {
+        var result = await api('POST', '/api/generate/proposal', {
+          jobTitle: $('#proposal-job-title').textContent,
+          jobDescription: desc,
+          tone: $('#proposal-tone').value,
+          highlights: $('#proposal-highlights').value.trim(),
+          budget: $('#proposal-job-budget').textContent,
+          skills: $('#proposal-job-skills').textContent,
+        });
+        $('#proposal-result-text').textContent = result.result;
+        show($('#proposal-result'));
+        incrementStat('proposal');
+        toast('Proposal generated!', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    $('#btn-copy-proposal').addEventListener('click', function () {
+      var text = $('#proposal-result-text').textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        toast('Proposal copied!', 'success');
+      });
+    });
+
+    $('#btn-refine-proposal').addEventListener('click', async function () {
+      var btn = $('#btn-refine-proposal');
+      var currentProposal = $('#proposal-result-text').textContent;
+      if (!currentProposal) return;
+
+      setLoading(btn, true);
+      try {
+        var result = await api('POST', '/api/generate/proposal', {
+          jobTitle: $('#proposal-job-title').textContent,
+          jobDescription: $('#proposal-job-desc').value.trim() + '\n\nPrevious proposal (refine and improve this):\n' + currentProposal,
+          tone: $('#proposal-tone').value,
+          highlights: $('#proposal-highlights').value.trim(),
+          budget: $('#proposal-job-budget').textContent,
+          skills: $('#proposal-job-skills').textContent,
+        });
+        $('#proposal-result-text').textContent = result.result;
+        toast('Proposal refined!', 'success');
+      } catch (err) {
+        toast(err.message, 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    $('#btn-clear-proposal').addEventListener('click', function () {
+      show($('#proposal-detect'));
+      hide($('#proposal-job-info'));
+      hide($('#proposal-result'));
+      $('#proposal-job-desc').value = '';
+      $('#proposal-highlights').value = '';
+      $('#proposal-result-text').textContent = '';
+      $('#proposal-hint').textContent = 'Navigate to an Upwork job posting, then click detect.';
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════
   //  BOOTSTRAP
   // ══════════════════════════════════════════════════════════════
   async function bootstrap() {
@@ -1219,6 +1329,7 @@
     initEmailValidator();
     initAIGenerator();
     initWhatsApp();
+    initProposalWriter();
     renderStats();
 
     if (token) {
