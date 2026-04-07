@@ -424,7 +424,8 @@ textarea { resize: vertical; }
 }
 
 /* ── AI Generator ── */
-#ai-result-text {
+#ai-result-text,
+#proposal-result-text {
   white-space: pre-wrap; font-size: 12px; line-height: 1.6;
   color: var(--gray-800); max-height: 180px; overflow-y: auto;
 }
