@@ -130,6 +130,8 @@ export default function Prompts() {
                 >
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
+                  <option value="upwork">Upwork</option>
+                  <option value="linkedin">LinkedIn</option>
                 </select>
               </div>
               <div className="form-group form-group-sm">
@@ -150,9 +152,18 @@ export default function Prompts() {
                 value={form.promptText}
                 onChange={(e) => updateField('promptText', e.target.value)}
                 placeholder="Enter the AI prompt text..."
-                rows={6}
+                rows={10}
                 disabled={saving}
               />
+              <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                {form.category === 'upwork' ? (
+                  <>Variables: {'{JOB_TITLE}'}, {'{JOB_DESCRIPTION}'}, {'{BUDGET}'}, {'{SKILLS}'}, {'{HIGHLIGHTS}'}, {'{TONE}'}</>
+                ) : form.category === 'email' || form.category === 'linkedin' ? (
+                  <>Variable: {'{PASTE_SELECTED_WEBSITE_TEXT}'} — replaced with the selected text</>
+                ) : (
+                  <>Variable: {'{PASTE_SELECTED_WEBSITE_TEXT}'} — replaced with the selected text</>
+                )}
+              </p>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={saving}>

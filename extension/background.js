@@ -24,11 +24,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Relay messages between content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_SELECTION') {
-    // Ask the active tab's content script for the current selection
+    // Use scripting.executeScript to get selection from any page (activeTab)
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_SELECTION' }, (response) => {
-          sendResponse(response || { text: '' });
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          func: () => window.getSelection()?.toString()?.trim() || '',
+        }).then((results) => {
+          sendResponse({ text: results?.[0]?.result || '' });
+        }).catch(() => {
+          sendResponse({ text: '' });
         });
       } else {
         sendResponse({ text: '' });

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Swipe Toolkit",
   "version": "1.1.0",
-  "description": "All-in-one productivity toolkit: Snippet storage, Email validation, AI content generation, WhatsApp messaging, and Upwork proposal writing.",
+  "description": "Snippets, email validation, AI content generation, WhatsApp messaging, and Upwork proposal writing.",
   "permissions": [
     "storage",
     "contextMenus",
@@ -26,7 +26,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://*.upwork.com/*"],
       "js": ["content.js"]
     }
   ],

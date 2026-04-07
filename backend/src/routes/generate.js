@@ -48,7 +48,25 @@ router.post('/proposal', async (req, res) => {
     };
     const toneDesc = toneMap[tone] || toneMap.professional;
 
-    const systemPrompt = `You are an expert Upwork freelancer proposal writer. Write a compelling, personalized proposal that:
+    // Check for a custom upwork prompt in the database
+    const dbPrompt = await req.prisma.prompt.findFirst({
+      where: { category: 'upwork' },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    let systemPrompt;
+    if (dbPrompt) {
+      // Replace variables in the DB prompt
+      systemPrompt = dbPrompt.promptText
+        .replace(/\{JOB_TITLE\}/g, jobTitle || 'Not specified')
+        .replace(/\{JOB_DESCRIPTION\}/g, jobDescription)
+        .replace(/\{BUDGET\}/g, budget || 'Not specified')
+        .replace(/\{SKILLS\}/g, skills || 'Not specified')
+        .replace(/\{HIGHLIGHTS\}/g, highlights || '')
+        .replace(/\{TONE\}/g, toneDesc);
+    } else {
+      // Fallback to hardcoded prompt
+      systemPrompt = `You are an expert Upwork freelancer proposal writer. Write a compelling, personalized proposal that:
 - Opens with a hook that shows you understand the client's specific problem
 - Demonstrates relevant experience briefly (2-3 sentences max)
 - Proposes a clear approach/solution
@@ -58,8 +76,11 @@ router.post('/proposal', async (req, res) => {
 - Does NOT use generic phrases like "I am writing to express my interest" or "Dear hiring manager"
 - Does NOT include placeholder text in brackets
 - Sounds natural and human, not AI-generated`;
+    }
 
-    const userContent = `Job Title: ${jobTitle || 'Not specified'}
+    const userContent = dbPrompt
+      ? jobDescription
+      : `Job Title: ${jobTitle || 'Not specified'}
 Job Description: ${jobDescription}
 ${budget ? `Budget: ${budget}` : ''}
 ${skills ? `Required Skills: ${skills}` : ''}
