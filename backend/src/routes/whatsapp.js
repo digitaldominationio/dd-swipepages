@@ -13,6 +13,9 @@ router.post('/send', async (req, res) => {
 
     const result = await sendWhatsApp(req.prisma, phone, message);
     await logActivity(req.prisma, req.user.id, 'send', 'whatsapp_message', phone);
+    await req.prisma.history.create({
+      data: { userId: req.user.id, category: 'whatsapp', title: phone, input: message, output: JSON.stringify(result) },
+    });
     res.json(result);
   } catch (err) {
     console.error('WhatsApp send error:', err);

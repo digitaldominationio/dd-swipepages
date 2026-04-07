@@ -25,6 +25,9 @@ router.post('/', async (req, res) => {
     const data = await generateText(req.prisma, systemPrompt, content);
     const text = data.choices?.[0]?.message?.content || '';
     await logActivity(req.prisma, req.user.id, 'generate', 'ai_generation', promptId);
+    await req.prisma.history.create({
+      data: { userId: req.user.id, category: 'ai_generation', title: prompt.name, input: content, output: text },
+    });
     res.json({ result: text });
   } catch (err) {
     console.error('Generation error:', err);
@@ -91,6 +94,9 @@ Write a short, compelling Upwork proposal for this job.`;
     const data = await generateText(req.prisma, systemPrompt, userContent);
     const text = data.choices?.[0]?.message?.content || '';
     await logActivity(req.prisma, req.user.id, 'generate', 'proposal', jobTitle || 'upwork_proposal');
+    await req.prisma.history.create({
+      data: { userId: req.user.id, category: 'proposal', title: jobTitle || 'Upwork Proposal', input: jobDescription, output: text },
+    });
     res.json({ result: text });
   } catch (err) {
     console.error('Proposal generation error:', err);

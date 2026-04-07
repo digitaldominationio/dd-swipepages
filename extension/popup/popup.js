@@ -792,6 +792,7 @@
         show(resultEl);
         renderEmailResult(data, resultEl);
         incrementStat('email');
+        loadHistory('email_validation');
       } catch (err) {
         show(resultEl);
         resultEl.textContent = '';
@@ -839,6 +840,7 @@
       show(controlsEl);
       show(resultsEl);
       renderBulkResults(results);
+      loadHistory('email_validation');
 
       // Store results for filtering and copy
       resultsEl._data = results;
@@ -1024,6 +1026,7 @@
         $('#ai-result-text').textContent = data.result || '';
         show($('#ai-result'));
         incrementStat('ai');
+        loadHistory('ai_generation');
 
         // If WhatsApp callback is pending, send result back
         if (window._waAICallback) {
@@ -1142,6 +1145,7 @@
 
         toast('Message sent!', 'success');
         incrementStat('wa');
+        loadHistory('whatsapp');
       } catch (err) {
         var resultEl2 = $('#wa-result');
         show(resultEl2);
@@ -1232,6 +1236,7 @@
         $('#proposal-result-text').textContent = result.result;
         show($('#proposal-result'));
         incrementStat('proposal');
+        loadHistory('proposal');
         toast('Proposal generated!', 'success');
       } catch (err) {
         toast(err.message, 'error');
@@ -1283,6 +1288,131 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  //  HISTORY
+  // ══════════════════════════════════════════════════════════════
+  function timeAgo(dateStr) {
+    var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function renderHistory(category, items) {
+    var container = $('#history-' + category);
+    if (!container) return;
+    container.textContent = '';
+
+    if (!items || items.length === 0) {
+      hide(container);
+      return;
+    }
+    show(container);
+
+    var header = document.createElement('div');
+    header.className = 'history-header';
+    var toggleSpan = document.createElement('span');
+    toggleSpan.className = 'history-toggle';
+    toggleSpan.textContent = '\u25BC';
+    header.appendChild(toggleSpan);
+    var headerText = document.createTextNode(' Recent (' + items.length + ')');
+    header.appendChild(headerText);
+    header.addEventListener('click', function () {
+      header.classList.toggle('collapsed');
+    });
+    container.appendChild(header);
+
+    var list = document.createElement('div');
+    list.className = 'history-list';
+
+    items.forEach(function (item) {
+      var div = document.createElement('div');
+      div.className = 'history-item';
+
+      var preview = item.output ? item.output.substring(0, 80) : item.title;
+
+      var headerDiv = document.createElement('div');
+      headerDiv.className = 'history-item-header';
+
+      var titleSpan = document.createElement('span');
+      titleSpan.className = 'history-item-title';
+      titleSpan.textContent = item.title || category;
+      headerDiv.appendChild(titleSpan);
+
+      var timeSpan = document.createElement('span');
+      timeSpan.className = 'history-item-time';
+      timeSpan.textContent = timeAgo(item.createdAt);
+      headerDiv.appendChild(timeSpan);
+
+      div.appendChild(headerDiv);
+
+      var previewDiv = document.createElement('div');
+      previewDiv.className = 'history-item-preview';
+      previewDiv.textContent = preview;
+      div.appendChild(previewDiv);
+
+      var bodyDiv = document.createElement('div');
+      bodyDiv.className = 'history-item-body';
+      bodyDiv.textContent = item.output || '';
+      div.appendChild(bodyDiv);
+
+      var actions = document.createElement('div');
+      actions.className = 'history-item-actions';
+      var copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-sm btn-outline';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(item.output || item.title || '');
+        toast('Copied!', 'success');
+      });
+      actions.appendChild(copyBtn);
+      div.appendChild(actions);
+
+      div.addEventListener('click', function () {
+        div.classList.toggle('expanded');
+      });
+
+      list.appendChild(div);
+    });
+
+    container.appendChild(list);
+  }
+
+  async function loadHistory(category) {
+    try {
+      var items = await api('GET', '/api/history?category=' + category + '&limit=10');
+      renderHistory(category, items);
+    } catch (e) {
+      // silently fail — history is non-critical
+    }
+  }
+
+  async function loadAllHistory() {
+    var categories = ['email_validation', 'ai_generation', 'whatsapp', 'proposal'];
+    await Promise.all(categories.map(function (c) { return loadHistory(c); }));
+  }
+
+  async function clearHistory(category) {
+    try {
+      await api('DELETE', '/api/history?category=' + category);
+      renderHistory(category, []);
+      toast('History cleared', 'success');
+    } catch (e) {
+      toast('Failed to clear history', 'error');
+    }
+  }
+
+  function initHistory() {
+    $$('.btn-clear-history').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        clearHistory(btn.dataset.category);
+      });
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════
   //  BOOTSTRAP
   // ══════════════════════════════════════════════════════════════
   async function bootstrap() {
@@ -1301,6 +1431,7 @@
     renderFolderTree();
     renderTagFilter();
     loadAndRenderSnippets();
+    loadAllHistory();
   }
 
   // ── Modal wiring ──────────────────────────────────────────────
@@ -1330,6 +1461,7 @@
     initAIGenerator();
     initWhatsApp();
     initProposalWriter();
+    initHistory();
     renderStats();
 
     if (token) {

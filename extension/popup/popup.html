@@ -64,6 +64,7 @@
     <div class="tab-header">
       <span class="tab-header-title">Email Validator</span>
       <span class="tab-stat" id="stat-email" title="Emails validated today">0</span>
+      <button class="btn-icon btn-clear-history" data-category="email_validation" title="Clear history">&#128465;</button>
     </div>
     <div class="panel-body">
       <!-- Mode toggle -->
@@ -102,6 +103,7 @@
         <div id="bulk-results" class="bulk-results hidden"></div>
       </div>
     </div>
+    <div class="history-section hidden" id="history-email_validation"></div>
   </section>
 
   <!-- ── Tab 3: AI Generator ── -->
@@ -109,6 +111,7 @@
     <div class="tab-header">
       <span class="tab-header-title">AI Generator</span>
       <span class="tab-stat" id="stat-ai" title="AI generations today">0</span>
+      <button class="btn-icon btn-clear-history" data-category="ai_generation" title="Clear history">&#128465;</button>
     </div>
     <div class="panel-body">
       <div class="form-group">
@@ -134,6 +137,7 @@
         </div>
       </div>
     </div>
+    <div class="history-section hidden" id="history-ai_generation"></div>
   </section>
 
   <!-- ── Tab 4: WhatsApp Send ── -->
@@ -141,6 +145,7 @@
     <div class="tab-header">
       <span class="tab-header-title">WhatsApp Send</span>
       <span class="tab-stat" id="stat-wa" title="Messages sent today">0</span>
+      <button class="btn-icon btn-clear-history" data-category="whatsapp" title="Clear history">&#128465;</button>
     </div>
     <div class="panel-body">
       <div class="form-group">
@@ -161,6 +166,7 @@
       </div>
       <div id="wa-result" class="result-card hidden"></div>
     </div>
+    <div class="history-section hidden" id="history-whatsapp"></div>
   </section>
 
   <!-- ── Tab 5: Upwork Proposal Writer ── -->
@@ -168,6 +174,7 @@
     <div class="tab-header">
       <span class="tab-header-title">Proposal Writer</span>
       <span class="tab-stat" id="stat-proposal" title="Proposals generated today">0</span>
+      <button class="btn-icon btn-clear-history" data-category="proposal" title="Clear history">&#128465;</button>
     </div>
     <div class="panel-body">
       <div id="proposal-detect" class="proposal-detect">
@@ -212,6 +219,7 @@
         </div>
       </div>
     </div>
+    <div class="history-section hidden" id="history-proposal"></div>
   </section>
 
   <!-- ── Settings ── -->

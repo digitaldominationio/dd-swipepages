@@ -39,6 +39,7 @@ model User {
   snippets      Snippet[]
   prompts       Prompt[]
   activityLogs  ActivityLog[]
+  history       History[]
 
   @@map("users")
 }
@@ -141,4 +142,18 @@ model ActivityLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("activity_log")
+}
+
+model History {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  category  String   @db.VarChar(50)
+  title     String   @db.VarChar(500)
+  input     String?  @db.Text
+  output    String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("history")
 }

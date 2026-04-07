@@ -17,6 +17,7 @@ const tagRoutes = require('./routes/tags');
 const validateEmailRoutes = require('./routes/validate-email');
 const generateRoutes = require('./routes/generate');
 const whatsappRoutes = require('./routes/whatsapp');
+const historyRoutes = require('./routes/history');
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -45,6 +46,7 @@ app.use('/api/validate-email', authMiddleware, validateEmailRoutes);
 app.use('/api/generate', authMiddleware, generateRoutes);
 app.use('/api/prompts', authMiddleware, generateRoutes);
 app.use('/api/whatsapp', authMiddleware, whatsappRoutes);
+app.use('/api/history', authMiddleware, historyRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
