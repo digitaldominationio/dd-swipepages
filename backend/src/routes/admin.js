@@ -209,7 +209,7 @@ router.get('/settings', async (req, res) => {
     for (const s of settings) {
       const decrypted = decrypt(s.valueEncrypted);
       masked[s.key] = decrypted.length > 4
-        ? '*'.repeat(decrypted.length - 4) + decrypted.slice(-4)
+        ? '*'.repeat(Math.min(decrypted.length - 4, 24)) + decrypted.slice(-4)
         : '****';
     }
     res.json(masked);
