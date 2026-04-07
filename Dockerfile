@@ -59,6 +59,9 @@ COPY --from=backend-builder /app/src ./src
 # Copy seed script
 COPY --from=backend-builder /app/prisma/seed.js ./prisma/seed.js
 
+# Copy public static files (privacy policy, etc.)
+COPY --from=backend-builder /app/public ./public
+
 # Copy built admin panel into public/admin for static serving
 COPY --from=admin-builder /app/admin/dist ./public/admin
 
